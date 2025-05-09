@@ -1,0 +1,244 @@
+---
+title: "UD877_wt_03_1"
+output: html_document
+date: "2025-04-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+library("tidyverse")
+library("janitor")
+library("naniar")
+library("dplyr")
+library("tidyr")
+library("ggplot2")
+
+library("gtools")
+library("scales")
+```
+
+```{r}
+UD877_lmn_1 <- read_csv ("/Users/wangguanzhi/Documents/GitHub/BIS15W2025_gwang/未命名/worm/20241123_UD877_lmn-1_01_1_deconvolved_3Dcropped_Overall.csv")
+UD877_sun_1 <- read_csv("/Users/wangguanzhi/Documents/GitHub/BIS15W2025_gwang/未命名/worm/20241122_ud877_sun-1i_02_3_3Dcropped_Plot.csv") %>% na.omit()
+UD877_wt_03_1 <- read_csv("/Users/wangguanzhi/Documents/GitHub/BIS15W2025_gwang/未命名/worm/UD877_wt_03_1_deconvolved_3Dcropped_new_Average.csv") 
+```
+```{r}
+glimpse(lmn_1)
+```
+#lmn_1 data cleaning
+
+```{r}
+# Separate the single column into multiple columns
+final_data <- UD877_lmn_1 %>%
+  separate(Overall, into = c("Variable", "Value", "Unit", "Class", "Time", "ID", "Extra"), 
+           sep = ",", fill = "right")
+
+# Clean the data (remove separator rows, convert types)
+UD877_lmn_1 <- final_data %>%
+  filter(!grepl("====", Variable)) %>%
+  mutate(Time = as.numeric(Time),
+         Value = as.numeric(Value)) 
+
+
+```
+```{r}
+UD877_lmn_1 <- UD877_lmn_1 %>% 
+  na.omit()
+```
+
+```{r}
+UD877_sun_1_Area <- UD877_sun_1 
+```
+
+#sun_1 data cleaning(not using)
+
+```{r}
+# Separate the single column into multiple columns
+#UD877_sun_1 <- UD877_sun_1 %>%
+    # pass first line
+  slice(-1) %>%
+  # separate
+  separate(
+    col = Area,
+    into = c("Time [s]", "Min", "Max", "Median", "Percentile 25%", 
+             "Percentile 75%", "Sum", "Mean", "StdDev", "Count", "extra"),
+    sep = ",",
+    fill = "right"
+  ) %>%
+  # remove last line
+  select(-extra) %>%
+  # convert to numerical
+  mutate(across(everything(), as.numeric))
+
+```
+#wt_03_1 data cleaning
+```{r}
+# Separate the single column into multiple columns
+UD877_sun_1 <- UD877_sun_1 %>%
+    # pass first line
+  slice(-1) %>%
+  # separate
+  separate(
+    col = Area,
+    into = c("Time [s]", "Min", "Max", "Median", "Percentile 25%", 
+             "Percentile 75%", "Sum", "Mean", "StdDev", "Count", "extra"),
+    sep = ",",
+    fill = "right"
+  ) %>%
+  # remove last line
+  select(-extra) %>%
+  # convert to numerical
+  mutate(across(everything(), as.numeric))
+```
+
+
+#lmn-1 nucleus number per time
+
+```{r,}
+UD877_lmn_1 %>% 
+  filter(Variable == "Number of Disconnected Components per Time Point") %>% 
+  ggplot(aes(x = Time, y = Value)) +
+    # 图形元素
+    geom_line(color = "steelblue", linewidth = 1) +
+    geom_point(size = 1, color = "tomato", alpha = 0.8) +
+    
+    # 调整x轴范围和刻度
+    scale_x_continuous(
+      breaks = seq(min(UD877_lmn_1$Time), max(UD877_lmn_1$Time), by = 2),
+     
+      expand = expansion(mult = 0.05)  # 两侧留5%空白
+    ) +
+
+    
+    # 主题和标签
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 7),
+      plot.title = element_text(hjust = 0.5, face = "bold")
+    ) +
+    labs(
+      title = "Disconnected Components per Time Point",
+      x = "Frame",
+      y = "Number of Components"
+    )
+```
+#sun-1 area changes per time
+```{r,fig.width=20,fig.height=6}
+UD877_sun_1_Area %>% 
+
+  ggplot(aes(x= Time, y = Mean)) +
+    # 图形元素
+    geom_line(color = "steelblue", linewidth = 1) +
+    geom_point(size = 1, color = "tomato", alpha = 0.8) +
+    
+ # 调整x轴范围和刻度
+    scale_x_continuous(
+      breaks = seq(min(UD877_sun_1_Area$Time), max(UD877_sun_1_Area$Time), by = 2),
+     
+      expand = expansion(mult = 0.05)  # 两侧留5%空白
+    ) +
+    
+    # 主题和标签
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 15),
+      plot.title = element_text(hjust = 0.5, face = "bold")
+    ) +
+    labs(
+      title = "Area change per time",
+      x = "Frame",
+      y = "Area"
+    )
+```
+#wt_03_1 area changes per frame
+```{r,fig.width=20,fig.height=6}
+UD877_wt_03_1 %>% 
+filter(Variable == "Area") %>% 
+  ggplot(aes(x= Time, y = Mean)) +
+    # 图形元素
+    geom_line(color = "steelblue", linewidth = 1) +
+    geom_point(size = 1, color = "tomato", alpha = 0.8) +
+    
+ # 调整x轴范围和刻度
+    scale_x_continuous(
+      breaks = seq(min(UD877_wt_03_1$Time), max(UD877_wt_03_1$Time), by = 2),
+     
+      expand = expansion(mult = 0.05)  # 两侧留5%空白
+    ) +
+    
+    # 主题和标签
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 15),
+      plot.title = element_text(hjust = 0.5, face = "bold")
+    ) +
+    labs(
+      title = "Area change per time",
+      x = "Frame",
+      y = "Area"
+    )
+```
+#wt_03_1 intensity changes per frame
+```{r,fig.width=20,fig.height=6}
+UD877_wt_03_1 %>% 
+filter(Variable == "Intensity Mean") %>% 
+  ggplot(aes(x= Time, y = Mean)) +
+    # 图形元素
+    geom_line(color = "steelblue", linewidth = 1) +
+    geom_point(size = 1, color = "tomato", alpha = 0.8) +
+    
+ # 调整x轴范围和刻度
+    scale_x_continuous(
+      breaks = seq(min(UD877_wt_03_1$Time), max(UD877_wt_03_1$Time), by = 2),
+     
+      expand = expansion(mult = 0.05)  # 两侧留5%空白
+    ) +
+    
+    # 主题和标签
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 12),
+      plot.title = element_text(hjust = 0.5, face = "bold")
+    ) +
+    labs(
+      title = "Intensity change per time",
+      x = "Frame",
+      y = "Intensity"
+    )
+
+```
+##wt_03_1 nucleus number changes per frame
+```{r,fig.width=10}
+UD877_wt_03_1 %>% 
+  filter(Variable == "Number of Disconnected Components") %>% 
+  ggplot(aes(x = Time, y = Count)) +
+    # 图形元素
+    geom_line(color = "steelblue", linewidth = 1) +
+    geom_point(size = 1, color = "tomato", alpha = 0.8) +
+    
+    # 调整x轴范围和刻度
+    scale_x_continuous(
+      breaks = seq(min(UD877_wt_03_1$Time), max(UD877_wt_03_1$Time), by = 2),
+     
+      expand = expansion(mult = 0.05)  # 两侧留5%空白
+    ) +
+
+    scale_y_continuous(
+      breaks = seq(min(UD877_wt_03_1$Time), max(UD877_wt_03_1$Time), by = 2) # 两侧留5%空白
+    ) +
+    # 主题和标签
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 12),
+      plot.title = element_text(hjust = 0.5, face = "bold")
+    ) +
+    labs(
+      title = "Disconnected Components per Time Point",
+      x = "Frame",
+      y = "Number of Components"
+    )
+```
+
