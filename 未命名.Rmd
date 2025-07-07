@@ -1,0 +1,204 @@
+---
+title: "Lab"
+output: html_document
+date: "2025-05-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("ggridges")
+```
+
+```{r message=FALSE, warning=FALSE}
+library("tidyverse")
+library("janitor")
+library("naniar")
+library("dplyr")
+library("tidyr")
+library("ggridges")
+library("gtools")
+library("scales")
+library("gridExtra")
+```
+
+```{r}
+Nucleolus <- read_csv("/Users/wangguanzhi/Desktop/Lab/Embryogenesis/data/Final_All_Nucleoli_Data.csv")
+Intensity_Max <- read_csv("/Users/wangguanzhi/Desktop/Lab/Embryogenesis/data/Final_Intensity_Max_Combined_Table.csv")
+Intensity_Mean <- read_csv("/Users/wangguanzhi/Desktop/Lab/Embryogenesis/data/Final_Intensity_Mean_Combined_Table.csv")
+```
+
+
+```{r}
+Nucleolus <- Nucleolus %>%
+  mutate(y = ifelse(Value > 0, 2, 0))
+
+
+Nucleolus$nucleus <- factor(Nucleolus$nucleus, levels = unique(Nucleolus$nucleus))
+
+
+nucleus_y <- Nucleolus %>%
+  group_by(nucleus) %>%
+  summarise(y = ifelse(any(y > 0), 2, 0), .groups = "drop")
+
+
+nucleus_sd <- Nucleolus %>%
+  group_by(nucleus) %>%
+  summarise(sd_y = sd(y), .groups = "drop")
+
+
+summary_df <- left_join(nucleus_y, nucleus_sd, by = "nucleus")
+
+custom_colors <- c(
+  "AB" = "#999999",
+  "P1" = "#E69F00",
+  "ABa" = "#56B4E9",
+  "ABp" = "#009E73",
+  "EMS" = "#F0E442",
+  "P2" = "#0072B2",
+  "ABal" = "#D55E00",
+  "ABpl" = "#CC79A7",
+  "ABar" = "#8DA0CB",
+  "ABpr" = "#FC8D62",
+  "E" = "#66C2A5",
+  "MS" = "#A6D854",
+  "P3" = "#FFD92F",
+  "C" = "#E78AC3"
+)
+
+
+# 画图
+ggplot(summary_df, aes(x = nucleus, y = y, fill = nucleus)) +
+  geom_bar(stat = "identity", color = "black") + 
+  geom_errorbar(aes(ymin = y - sd_y, ymax = y + sd_y), width = 0.2) +
+  scale_fill_manual(values = custom_colors) +  # ✅ 自定义颜色
+  scale_y_continuous(limits = c(0, 5)) +
+  labs(x = "Nucleus", y = "Nucleolus Number",
+       title = "Nucleolus Presence per Nucleus (with Error Bars)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none")
+
+
+
+```
+
+```{r message=TRUE, warning=TRUE}
+Nucleolus$nucleus <- factor(Nucleolus$nucleus, levels = unique(Nucleolus$nucleus))
+
+# 自定义颜色（和前面一样）
+custom_colors <- c(
+  "AB" = "#999999",
+  "P1" = "#E69F00",
+  "ABa" = "#56B4E9",
+  "ABp" = "#009E73",
+  "EMS" = "#F0E442",
+  "P2" = "#0072B2",
+  "ABal" = "#D55E00",
+  "ABpl" = "#CC79A7",
+  "ABar" = "#8DA0CB",
+  "ABpr" = "#FC8D62",
+  "E" = "#66C2A5",
+  "MS" = "#A6D854",
+  "P3" = "#FFD92F",
+  "C" = "#E78AC3"
+)
+ggplot(Nucleolus, aes(x = Value, y = nucleus, fill = nucleus)) +
+  geom_density_ridges(scale = 1.5, alpha = 0.7) +
+  scale_fill_viridis_d() +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  labs(title = "Nucleolus Count Distribution per Nucleus", x = "Value", y = "Nucleus")
+
+```
+
+
+```{r}
+Nucleolus <- Nucleolus %>%
+  mutate(Time = as.numeric(Time))
+
+# Facet 折线图：每个 nucleus 一格
+ggplot(Nucleolus, aes(x = Time, y = Value)) +
+  geom_line(color = "steelblue") +
+  geom_point(size = 1) +
+  facet_wrap(~ nucleus, ncol = 4, scales = "free_y") +
+  labs(title = "Nucleolus Number Over Time per Nucleus",
+       x = "Time", y = "Nucleolus Number") +
+  theme_minimal() +
+  theme(strip.text = element_text(face = "bold"),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+# 保存为更大尺寸的图像文件（如 PNG）
+
+
+```
+
+
+```{r}
+Nucleolus %>% 
+  filter(nucleus == "ABal") %>% 
+  ggplot(aes(x=Time,y=Value))+
+  geom_line()+
+  geom_point()+
+  
+   labs(title = "number of participants with or without heart disease by age")
+```
+
+```{r}
+Intensity_Max %>% 
+  ggplot( aes(x = nucleus, y = Mean, fill = nucleus)) +
+  geom_boxplot() +
+  labs(title = "Max Intensity by Nucleus",
+       x = "Nucleus",
+       y = "Max Intensity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+```{r}
+summary_data <- Intensity_Max %>%
+  group_by(nucleus) %>%
+  summarise(
+    y = mean(Mean, na.rm = TRUE),
+    sd_y = sd(Mean, na.rm = TRUE)
+  )
+
+
+ggplot(summary_data, aes(x = nucleus, y = y, fill = nucleus)) +
+  geom_bar(stat = "identity", color = "black") + 
+  geom_errorbar(aes(ymin = y - sd_y, ymax = y + sd_y), width = 0.2) +
+  labs(title = "Max Intensity by Nucleus",
+       x = "Nucleus",
+       y = "Max Intensity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+```{r}
+Intensity_Mean %>% 
+  ggplot( aes(x = nucleus, y = Mean, fill = nucleus)) +
+  geom_boxplot() +
+  labs(title = "Mean Intensity by Nucleus",
+       x = "Nucleus",
+       y = "Mean Intensity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+```{r}
+summary_data <- Intensity_Mean %>%
+  group_by(nucleus) %>%
+  summarise(
+    y = mean(Mean, na.rm = TRUE),
+    sd_y = sd(Mean, na.rm = TRUE)
+  )
+
+
+ggplot(summary_data, aes(x = nucleus, y = y, fill = nucleus)) +
+  geom_bar(stat = "identity", color = "black") + 
+  geom_errorbar(aes(ymin = y - sd_y, ymax = y + sd_y), width = 0.2) +
+  labs(title = "Mean Intensity by Nucleus",
+       x = "Nucleus",
+       y = "Mean Intensity") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+
